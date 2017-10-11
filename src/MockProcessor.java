@@ -1,13 +1,36 @@
+import cn.helium.kvstore.common.KvStoreConfig;
 import cn.helium.kvstore.processor.Processor;
+import org.apache.hadoop.fs.FsUrlStreamHandlerFactory;
+import org.apache.hadoop.io.IOUtils;
 
+import java.io.IOException;
+import java.io.InputStream;
+import java.net.MalformedURLException;
+import java.net.URL;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 
 public class MockProcessor implements Processor {
+    static{
+        URL.setURLStreamHandlerFactory(new FsUrlStreamHandlerFactory());
+    }
+
     Map<String, Map<String, String>> store = new HashMap();
 
     public MockProcessor() {
+        String url = KvStoreConfig.getHdfsUrl();
+        InputStream in=null;
+        try {
+            in=new URL(url).openStream();
+            IOUtils.copyBytes(in, System.out, 2048,false);
+        } catch (MalformedURLException e) {
+            e.printStackTrace();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }finally{
+            IOUtils.closeStream(in);
+        }
     }
 
     public Map<String, String> get(String key) {
