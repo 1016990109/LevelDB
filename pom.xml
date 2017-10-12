@@ -25,6 +25,13 @@
 
     <dependencies>
         <dependency>
+            <groupId>cn.helium</groupId>
+            <artifactId>kvstore</artifactId>
+            <version>1.0-SNAPSHOT</version>
+            <scope>system</scope>
+            <systemPath>${project.basedir}/lib/original-kvstore-1.0-SNAPSHOT.jar</systemPath>
+        </dependency>
+        <dependency>
             <groupId>io.grpc</groupId>
             <artifactId>grpc-netty</artifactId>
             <version>${grpc.version}</version>
