@@ -70,12 +70,6 @@ public class BufferedWriter extends Writer {
     writer.rollback();
   }
 
-  @Override
-  public void commit() throws IOException {
-    flush();
-    writer.commit();
-  }
-
   static class KeyValueEntry implements Comparable<KeyValueEntry> {
     Key key;
     Value value;

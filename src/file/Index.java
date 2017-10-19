@@ -1,6 +1,5 @@
 package file;
 
-import client.Utils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.*;
 import org.apache.hadoop.io.LongWritable;
@@ -22,53 +21,6 @@ import java.util.concurrent.atomic.AtomicLong;
 public class Index {
 
   private Index() {
-
-  }
-
-  public static void main(String[] args) throws IOException {
-    Configuration conf = new Configuration();
-    FileSystem fileSystem = FileSystem.get(conf);
-
-    Path dataFile = new Path("./tmp/data.file");
-//    Progressable progress = new Progressable() {
-//      @Override
-//      public void progress() {
-//
-//      }
-//    };
-//    fileSystem.delete(dataFile.getParent(), true);
-//    Metadata metaData = new Metadata();
-//    int blockSize = 64000;
-//    Writer writer = new Index.Writer(fileSystem, conf, dataFile, progress, metaData, blockSize);
-//
-//    Value value = new Value();
-//    Key key = new Key();
-//    int size = 200;
-//    for (int i = 0; i < size; i++) {
-//      Utils.b(key.rowId, i);
-//      Utils.b(key.qualifier, i);
-//      key.timestamp.set(System.currentTimeMillis());
-//      Utils.b(value.getData(), i);
-//      writer.write(key, value);
-//    }
-//    writer.close();
-
-    Reader reader = new Reader(fileSystem, dataFile, conf);
-    Key k = new Key();
-    Value v = new Value();
-    while (reader.next()) {
-      reader.fetch(k, v);
-      System.out.println(k + "=>" + v);
-    }
-    Utils.b(k.rowId, 0);
-    if (reader.seek(k)) {
-      if (reader.next()) {
-        reader.fetch(k, v);
-      } else {
-        reader.fetchPrev(k, v);
-      }
-      System.out.println(k + "=>" + v);
-    }
 
   }
 
@@ -399,7 +351,6 @@ public class Index {
 
   private static SequenceFile.Writer getWriter(boolean index, FileSystem fileSystem, Configuration conf, Path dataFile, Progressable progress, Metadata metaData)
       throws IOException {
-//    CompressionType type = CompressionType.BLOCK;
     CompressionType type = CompressionType.NONE;
     if (index) {
       return SequenceFile.createWriter(fileSystem, conf, dataFile, Key.class, LongWritable.class, CompressionType.NONE, getCodec(conf), progress, metaData);

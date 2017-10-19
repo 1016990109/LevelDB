@@ -21,27 +21,16 @@ import java.util.concurrent.TimeUnit;
 
 public class HeDb {
 
-  public static final String HEDB_ROOT_PATH = "hadoop.tmp.dir";
-  public static final String HEDB_DATABASE_PATH = "hedb.database.path";
   public static final String DELETE = "delete";
   public static final String GENERATION = "generation";
   public static final String TMP = "tmp";
-  public static final String SESSION = "session";
   public static final String DATA = "data";
-  public static final int FILENAME_BUFFER_SIZE = 18;
-  public static final long MAX_SESSION_TIMEOUT = TimeUnit.MINUTES.toMillis(10);
-  public static final long SESSION_UPDATE = TimeUnit.SECONDS.toMillis(30);
-  public static final String HEDB_SESSION_ID = "hedb.sessionid";
-  public static final String HEDB_SPLIT_SIZE = "hedb.split.size";
-  public static final String HEDB_SPLIT_NUMBER = "hedb.split.number";
-  private static final String HDFS_PATH = "hdfs://master:9000";
 
   static {
     URL.setURLStreamHandlerFactory(new FsUrlStreamHandlerFactory());
   }
 
   private final Path rootPath;
-  private final Path dataPath;
   private final Path storePath;
   private final Path generationPath;
   private FileSystem fileSystem;
@@ -49,26 +38,25 @@ public class HeDb {
   private Reader reader;
   private GenerationManager generation;
   private int maxBufferedElements = 1000;
-  private int maxNumberOfSegmentsPerWriter = 5;
   private long minDensityPerSplit = 1024 * 1024;
 
   /**
-   * 
-   * Creates the {@HeClient} object to interact with the database.
-   * 
+   * 默认hdfs地址，测试用
+   * @param databaseName
    * @param configuration
-   * @param databaseName name
    * @throws IOException
    */
-
   public HeDb(Path databaseName, Configuration configuration) throws IOException {
+    this(databaseName, configuration, "hdfs://master:9000");
+  }
+
+  public HeDb(Path databaseName, Configuration configuration, String hdfsUrl) throws IOException {
     this.rootPath = new Path("/");
-    this.dataPath = new Path(rootPath, DATA);
     this.storePath = new Path(rootPath, TMP);
     this.generationPath = new Path(rootPath, GENERATION);
     try {
       //init filesystem
-      this.fileSystem = FileSystem.get(URI.create("hdfs://master:9000"), new Configuration());
+      this.fileSystem = FileSystem.get(URI.create(hdfsUrl), new Configuration());
       createDatabaseIfMissing();
       refresh();
     } catch (IOException e) {
@@ -112,20 +100,6 @@ public class HeDb {
   }
 
   /**
-   * Commits all writes to the database. The last key to be committed wins.
-   */
-  public void commit() throws IOException {
-    if (writer == null && fileSystem.exists(new Path(storePath, ""))) {
-      ensureOpenWriter();
-    }
-    if (writer != null) {
-      writer.commit();
-    }
-    writer = null;
-    refresh();
-  }
-
-  /**
    * Removes all changes since the last commit was called.
    */
   public void rollback() throws IOException {
@@ -146,7 +120,7 @@ public class HeDb {
 
   private void ensureOpenWriter() throws IOException {
     if (writer == null) {
-      writer = new BufferedWriter(new FileWriter(fileSystem, storePath, dataPath, maxNumberOfSegmentsPerWriter), maxBufferedElements, this);
+      writer = new BufferedWriter(new FileWriter(fileSystem, storePath), maxBufferedElements, this);
     }
   }
 
@@ -161,7 +135,7 @@ public class HeDb {
     if (generation != null) {
       generation.flush(fileSystem);
     }
-    generation = new GenerationManager(fileSystem, generationPath, dataPath);
+    generation = new GenerationManager(fileSystem, generationPath);
   }
 
   public void updateRange(Key startKey, Key endKey, Path dataPath) {
@@ -169,76 +143,12 @@ public class HeDb {
   }
 
   private void createDatabaseIfMissing() throws IOException {
-    fileSystem.mkdirs(dataPath);
     fileSystem.mkdirs(storePath);
     fileSystem.mkdirs(generationPath);
   }
 
   public Index.Reader openIndex(Path path) throws IOException {
     return new Index.Reader(fileSystem, new Path(path, HeDb.DATA), fileSystem.getConf());
-  }
-
-  public List<Entry<Key, Long>> getSplits(long numberOfPartitions) throws IOException {
-    List<Range> allRanges = generation.findAllRangesThatContainKey();
-    long totalSize = 0;
-    for (Range range : allRanges) {
-      ContentSummary contentSummary = fileSystem.getContentSummary(range.getPath());
-      totalSize += contentSummary.getLength();
-    }
-    long densityPerSplit = totalSize / numberOfPartitions;
-
-    List<Entry<Key, Long>> keysAndSizes = new ArrayList<Entry<Key, Long>>();
-    for (Range range : allRanges) {
-      Path path = range.getPath();
-      Index.Reader index = openIndex(path);
-      keysAndSizes.addAll(index.getDensity(minDensityPerSplit));
-      index.close();
-    }
-
-    Collections.sort(keysAndSizes, new Comparator<Entry<Key, Long>>() {
-      @Override
-      public int compare(Entry<Key, Long> o1, Entry<Key, Long> o2) {
-        return o1.getKey().compareTo(o2.getKey());
-      }
-    });
-
-    List<Entry<Key, Long>> result = new ArrayList<Entry<Key, Long>>();
-    long total = 0;
-    for (Entry<Key, Long> e : keysAndSizes) {
-      if (total >= densityPerSplit) {
-        result.add(Index.newEntry(e.getKey(), total));
-        total = 0;
-      }
-      total += e.getValue();
-    }
-
-    return result;
-  }
-
-  public List<Entry<Key, Long>> getSplitsBySize(long splitSize) throws IOException {
-    return getSplits(getSize() / splitSize);
-  }
-
-  public long getSize() throws IOException {
-    List<Range> allRanges = generation.findAllRangesThatContainKey();
-    long totalSize = 0;
-    for (Range range : allRanges) {
-      ContentSummary contentSummary = fileSystem.getContentSummary(range.getPath());
-      totalSize += contentSummary.getLength();
-    }
-    return totalSize;
-  }
-
-  public GenerationManager getGeneration() {
-    return generation;
-  }
-
-  public int getMaxBufferedElements() {
-    return maxBufferedElements;
-  }
-
-  public void setMaxBufferedElements(int maxBufferedElements) {
-    this.maxBufferedElements = maxBufferedElements;
   }
 
 }

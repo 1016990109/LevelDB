@@ -19,17 +19,6 @@ public class Range implements Writable {
   private Key endingKey;
   private Path path;
   
-  public static void main(String[] args) {
-    Range range = new Range(new Path("./cool/000002_000012"));
-    System.out.println(range.contains(new Key(new BytesWritable(Utils.toBytesFromHexString("000001")),EMPTY,ZERO)));
-    System.out.println(range.contains(new Key(new BytesWritable(Utils.toBytesFromHexString("000002")),EMPTY,ZERO)));
-    System.out.println(range.contains(new Key(new BytesWritable(Utils.toBytesFromHexString("00000200")),EMPTY,ZERO)));
-    System.out.println(range.contains(new Key(new BytesWritable(Utils.toBytesFromHexString("000011")),EMPTY,ZERO)));
-    System.out.println(range.contains(new Key(new BytesWritable(Utils.toBytesFromHexString("000012")),EMPTY,ZERO)));
-    System.out.println(range.contains(new Key(new BytesWritable(Utils.toBytesFromHexString("00001200")),EMPTY,ZERO)));
-    System.out.println(range.contains(new Key(new BytesWritable(Utils.toBytesFromHexString("000013")),EMPTY,ZERO)));
-  }
-  
   @Override
   public void write(DataOutput out) throws IOException {
     startingKey.write(out);

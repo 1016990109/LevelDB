@@ -17,7 +17,7 @@ public class GenerationManager {
   private final Path instanceGenerationPath;
   private final Generation generation;
 
-  public GenerationManager(FileSystem fileSystem, Path generationPath, Path dataPath)
+  public GenerationManager(FileSystem fileSystem, Path generationPath)
       throws IOException {
     //generationPath="/generation", dataPath="/data"，可能需要有指向索引的索引，这里暂时不考虑这么复杂，不使用dataPath
     generation = new Generation();
