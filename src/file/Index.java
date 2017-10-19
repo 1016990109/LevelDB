@@ -55,7 +55,11 @@ public class Index {
       }
       if (indexReader != null) {
         long location = indexReader.getLocation(key);
-        reader.seek(location);
+        if (location < 0) {
+          reader.seek(initPos);
+        } else {
+          reader.seek(location);
+        }
       } else {
         reader.seek(initPos);
       }
@@ -260,7 +264,7 @@ public class Index {
 
     private IndexWriter indexWriter;
     private SequenceFile.Writer writer;
-    private final int interval = 100;
+    private final int interval = 10;
     private int count = 0;
     private LongWritable position = new LongWritable();
     private Path dataFile;
@@ -318,7 +322,7 @@ public class Index {
 
     private IndexWriter indexWriter;
     private SequenceFile.Writer writer;
-    private final int interval = 100;
+    private final int interval = 10;
     private int count = 0;
     private LongWritable position = new LongWritable();
 

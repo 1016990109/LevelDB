@@ -6,7 +6,10 @@ import file.Value;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
 
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.util.HashMap;
 
 public class ReaderTest {
     public static void main(String[] args) {
@@ -17,8 +20,14 @@ public class ReaderTest {
             key.setRowId("578");
             Value value = new Value();
             client.read(key, value);
-            System.out.println(key + "=>" + value);
+            ByteArrayInputStream byteInt=new ByteArrayInputStream(value.getData().getBytes());
+            ObjectInputStream objInt=new ObjectInputStream(byteInt);
+            HashMap<String, String> map = (HashMap)objInt.readObject();
+            System.out.println(key + "=>" + map);
+//            client.rollback();
         } catch (IOException e) {
+            e.printStackTrace();
+        } catch (ClassNotFoundException e) {
             e.printStackTrace();
         }
     }
