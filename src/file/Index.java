@@ -264,7 +264,7 @@ public class Index {
 
     private IndexWriter indexWriter;
     private SequenceFile.Writer writer;
-    private final int interval = 10;
+    private final int interval = 128;
     private int count = 0;
     private LongWritable position = new LongWritable();
     private Path dataFile;
@@ -322,7 +322,7 @@ public class Index {
 
     private IndexWriter indexWriter;
     private SequenceFile.Writer writer;
-    private final int interval = 10;
+    private final int interval = 128;
     private int count = 0;
     private LongWritable position = new LongWritable();
 

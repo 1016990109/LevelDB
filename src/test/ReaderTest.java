@@ -17,7 +17,7 @@ public class ReaderTest {
             HeDb client = new HeDb(new Path("/"), new Configuration());
 
             Key key = new Key();
-            key.setRowId("578");
+            key.setRowId("39999");
             Value value = new Value();
             client.read(key, value);
             ByteArrayInputStream byteInt=new ByteArrayInputStream(value.getData().getBytes());

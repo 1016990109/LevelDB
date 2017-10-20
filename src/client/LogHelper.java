@@ -1,10 +1,10 @@
 package client;
 
+import file.Index;
 import file.Key;
 import file.Value;
 import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.fs.FileSystem;
-import org.apache.hadoop.fs.Path;
+import org.apache.hadoop.fs.*;
 import org.apache.hadoop.io.LongWritable;
 import org.apache.hadoop.io.SequenceFile;
 import org.apache.hadoop.util.Progressable;
@@ -12,16 +12,10 @@ import org.apache.hadoop.util.Progressable;
 import java.io.*;
 
 public class LogHelper {
+    private Path logPath = new Path("/opt/localdisk/log.out");
     private FileSystem fileSystem;
     private SequenceFile.Writer writer;
     private SequenceFile.Reader reader;
-    private SequenceFile.Metadata metaData = new SequenceFile.Metadata();
-    private Progressable progress = new Progressable() {
-        @Override
-        public void progress() {
-
-        }
-    };
 
     public LogHelper(FileSystem fileSystem) {
         this.fileSystem = fileSystem;
@@ -33,10 +27,16 @@ public class LogHelper {
     }
 
     public void readLogs(BufferedWriter bufferedWriter) throws IOException {
+        ensureReaderOpen();
+
+        if (reader == null) {
+            //no logs
+            return;
+        }
         boolean more = false;
-        Key bufKey = new Key();
-        Value bufValue = new Value();
         do {
+            Key bufKey = new Key();
+            Value bufValue = new Value();
             more = reader.next(bufKey, bufValue);
             bufferedWriter.restore(bufKey, bufValue);
         } while (more);
@@ -44,7 +44,15 @@ public class LogHelper {
 
     private void ensureWriterOpen() throws IOException {
         if (writer == null) {
-            writer = SequenceFile.createWriter(fileSystem, new Configuration(fileSystem.getConf()), new Path("/log.out"), Key.class, LongWritable.class);
+            writer = SequenceFile.createWriter(fileSystem, new Configuration(fileSystem.getConf()), logPath, Key.class, Value.class);
+        }
+    }
+
+    private void ensureReaderOpen() throws IOException {
+        if (reader == null) {
+            if (fileSystem.exists(logPath)) {
+                reader = new SequenceFile.Reader(fileSystem, logPath, new Configuration(fileSystem.getConf()));
+            }
         }
     }
 
@@ -54,5 +62,11 @@ public class LogHelper {
         } catch (IOException e) {
             e.printStackTrace();
         }
+    }
+
+    public void refresh() throws IOException {
+        writer.close();
+        writer = null;
+        fileSystem.delete(logPath, true);
     }
 }

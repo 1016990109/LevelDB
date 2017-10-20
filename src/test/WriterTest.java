@@ -16,7 +16,7 @@ public class WriterTest {
         try {
             HeDb client = new HeDb(new Path("/"), new Configuration());
 
-            for (int i = 0; i < 1001; i++) {
+            for (int i = 0; i < 40001; i++) {
                 Key key = new Key();
                 key.setRowId(i + "");
                 HashMap<String, String> map = new HashMap<String, String>();

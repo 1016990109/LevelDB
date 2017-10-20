@@ -39,8 +39,7 @@ public class HeDb {
     private Reader reader;
     private LogHelper logHelper;
     private GenerationManager generation;
-    private int maxBufferedElements = 1000;
-    private long minDensityPerSplit = 1024 * 1024;
+    private int maxBufferedElements = 10000;
 
     /**
      * 默认hdfs地址，测试用
@@ -84,14 +83,18 @@ public class HeDb {
 
 
     /**
-     * Reads the key and value from the database.
-     *
+     * 先判断内存中是否有该key，再去文件系统中找
      * @param key   the key.
      * @param value the value.
      * @return true if key was found, false if missing.
      */
     public boolean read(Key key, Value value) throws IOException {
         ensureOpenReader();
+
+        if (((BufferedWriter) writer).findInCache(key, value)) {
+            return true;
+        }
+
         return reader.read(key, value);
     }
 
@@ -139,9 +142,7 @@ public class HeDb {
             conf.set("fs.default.name", "file:///");
             conf.set("mapred.job.tracker", "local");
             //本地localdisk写log
-            String path = "/opt/localdisk";
-            URI uri = new URI(path);
-            FileSystem fileSystem = FileSystem.get(uri, conf);
+            FileSystem fileSystem = FileSystem.getLocal(conf);
             logHelper = new LogHelper(fileSystem);
         }
     }
@@ -169,5 +170,9 @@ public class HeDb {
 
     public void writeLog(Key key, Value value) throws IOException {
         logHelper.writeLog(key, value);
+    }
+
+    public void refreshLog() throws IOException {
+        logHelper.refresh();
     }
 }
