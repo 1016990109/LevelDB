@@ -87,15 +87,14 @@ public class HeDb {
      */
     public boolean read(Key key, Value value) throws IOException {
         ensureOpenReader();
-
-        if (((BufferedWriter) writer).findInCache(key, value)) {
-            return true;
-        }
-
         return reader.read(key, value);
     }
 
-    /**
+    public boolean findInCache(Key key, Value value) {
+        return ((BufferedWriter) writer).findInCache(key, value);
+    }
+
+   /**
      * Updates to the most current view of the database.
      */
     public void refresh() throws IOException {

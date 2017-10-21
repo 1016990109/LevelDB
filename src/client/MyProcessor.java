@@ -3,6 +3,8 @@ package client;
 import client.HeDb;
 import cn.helium.kvstore.common.KvStoreConfig;
 import cn.helium.kvstore.processor.Processor;
+import cn.helium.kvstore.rpc.RpcClientFactory;
+import cn.helium.kvstore.rpc.RpcServer;
 import file.Key;
 import file.Value;
 import org.apache.commons.io.output.ByteArrayOutputStream;
@@ -45,12 +47,30 @@ public class MyProcessor implements Processor {
         k.setRowId(key);
         Value v = new Value();
         try {
+            boolean isInCache = client.findInCache(k, v);
+            if (!isInCache) {
+                int serversNum = KvStoreConfig.getServersNum();
+                int current = RpcServer.getRpcServerId();
+
+                for (int i =0; i < serversNum; i++) {
+                    if (i != current) {
+                        //send to other kvpod
+                        byte[] result = RpcClientFactory.inform(i, key.getBytes());
+
+                        if (result != null) {
+                            return formatBytes(result);
+                        }
+                    }
+                }
+            } else {
+                return formatBytes(v.getData().getBytes());
+            }
+
+            //find in hdfs
             boolean isFound = client.read(k, v);
 
             if (isFound) {
-                ByteArrayInputStream byteInt=new ByteArrayInputStream(v.getData().getBytes());
-                ObjectInputStream objInt=new ObjectInputStream(byteInt);
-                return (Map)objInt.readObject();
+                return formatBytes(v.getData().getBytes());
             }
         } catch (IOException e) {
             e.printStackTrace();
@@ -100,9 +120,24 @@ public class MyProcessor implements Processor {
         return true;
     }
 
-    public byte[] process(byte[] inupt) {
-        System.out.println("receive info:" + new String(inupt));
-        return "received!".getBytes();
+    public byte[] process(byte[] input) {
+        System.out.println("receive info:" + new String(input));
+        Key k = new Key();
+        k.setRowId(new String(input));
+        Value v = new Value();
+
+        boolean isInCache = client.findInCache(k, v);
+        if (isInCache) {
+            return v.getData().getBytes();
+        } else {
+            return null;
+        }
+    }
+
+    private Map<String, String> formatBytes(byte[] input) throws IOException, ClassNotFoundException {
+        ByteArrayInputStream byteInt=new ByteArrayInputStream(input);
+        ObjectInputStream objInt=new ObjectInputStream(byteInt);
+        return (Map)objInt.readObject();
     }
 
     public void deleteLog() {
