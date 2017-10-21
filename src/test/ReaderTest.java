@@ -1,6 +1,7 @@
 package test;
 
 import client.HeDb;
+import client.MyProcessor;
 import file.Key;
 import file.Value;
 import org.apache.hadoop.conf.Configuration;
@@ -10,25 +11,13 @@ import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.util.HashMap;
+import java.util.Map;
 
 public class ReaderTest {
     public static void main(String[] args) {
-        try {
-            HeDb client = new HeDb(new Path("/"), new Configuration());
+        MyProcessor myProcessor = new MyProcessor();
 
-            Key key = new Key();
-            key.setRowId("39999");
-            Value value = new Value();
-            client.read(key, value);
-            ByteArrayInputStream byteInt=new ByteArrayInputStream(value.getData().getBytes());
-            ObjectInputStream objInt=new ObjectInputStream(byteInt);
-            HashMap<String, String> map = (HashMap)objInt.readObject();
-            System.out.println(key + "=>" + map);
-//            client.rollback();
-        } catch (IOException e) {
-            e.printStackTrace();
-        } catch (ClassNotFoundException e) {
-            e.printStackTrace();
-        }
+        Map<String, String> map = myProcessor.get("1999");
+        System.out.println("1999" + "=>" + map);
     }
 }

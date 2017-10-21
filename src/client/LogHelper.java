@@ -1,59 +1,77 @@
 package client;
 
-import file.Index;
 import file.Key;
 import file.Value;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.*;
-import org.apache.hadoop.io.LongWritable;
-import org.apache.hadoop.io.SequenceFile;
-import org.apache.hadoop.util.Progressable;
+import org.apache.hadoop.io.compress.CompressionCodec;
+import org.apache.hadoop.io.compress.DeflateCodec;
+import org.apache.hadoop.io.compress.SnappyCodec;
 
 import java.io.*;
+import java.util.Map;
 
 public class LogHelper {
-    private Path logPath = new Path("/opt/localdisk/log.out");
-    private FileSystem fileSystem;
-    private SequenceFile.Writer writer;
-    private SequenceFile.Reader reader;
+    private String logPath = "/opt/localdisk/log.out";
+    private MyProcessor processor;
+    private ObjectOutputStream writer;
+    private ObjectInputStream reader;
 
-    public LogHelper(FileSystem fileSystem) {
-        this.fileSystem = fileSystem;
+    public LogHelper(MyProcessor processor) {
+        this.processor = processor;
     }
 
-    public void writeLog(Key key, Value value) throws IOException {
+    public void writeLog(String key, Map<String, String> value) throws IOException {
         ensureWriterOpen();
-        writer.append(key, value);
+        writer.writeObject(key);
+        writer.writeObject(value);
+        writer.flush();
     }
 
-    public void readLogs(BufferedWriter bufferedWriter) throws IOException {
+    public void readLogs() throws IOException, ClassNotFoundException {
         ensureReaderOpen();
 
         if (reader == null) {
             //no logs
             return;
         }
-        boolean more = false;
-        do {
-            Key bufKey = new Key();
-            Value bufValue = new Value();
-            more = reader.next(bufKey, bufValue);
-            bufferedWriter.restore(bufKey, bufValue);
-        } while (more);
+
+        try {
+            while (true) {
+                String key = (String) reader.readObject();
+                Map<String, String> value = (Map<String, String>) reader.readObject();
+
+                processor.put(key, value, false);
+            }
+        } catch (EOFException e) {
+
+        } finally {
+            reader.close();
+        }
+
     }
 
     private void ensureWriterOpen() throws IOException {
         if (writer == null) {
-            writer = SequenceFile.createWriter(fileSystem, new Configuration(fileSystem.getConf()), logPath, Key.class, Value.class);
+            writer = new ObjectOutputStream(new FileOutputStream(logPath, true));
         }
     }
 
     private void ensureReaderOpen() throws IOException {
         if (reader == null) {
-            if (fileSystem.exists(logPath)) {
-                reader = new SequenceFile.Reader(fileSystem, logPath, new Configuration(fileSystem.getConf()));
+            File file = new File(logPath);
+
+            if (file.exists()) {
+                reader = new ObjectInputStream(new FileInputStream(file));
             }
         }
+    }
+
+    private static CompressionCodec getCodec(Configuration conf) {
+        if (SnappyCodec.isNativeCodeLoaded()) {
+            return new SnappyCodec();
+        }
+        return new DeflateCodec();
     }
 
     public void close() {
@@ -67,6 +85,10 @@ public class LogHelper {
     public void refresh() throws IOException {
         writer.close();
         writer = null;
-        fileSystem.delete(logPath, true);
+        File file = new File(logPath);
+
+        if (file.exists() && file.isFile()) {
+            file.delete();
+        }
     }
 }

@@ -1,3 +1,5 @@
+package client;
+
 import client.HeDb;
 import cn.helium.kvstore.common.KvStoreConfig;
 import cn.helium.kvstore.processor.Processor;
@@ -23,12 +25,17 @@ import java.util.Map;
 
 public class MyProcessor implements Processor {
     HeDb client;
+    LogHelper logHelper;
 
     public MyProcessor() {
         String url = KvStoreConfig.getHdfsUrl();
         try {
-            client = new HeDb(new Path("/"), new Configuration(), KvStoreConfig.getHdfsUrl());
+            logHelper = new LogHelper(this);
+            client = new HeDb(this, new Path("/"), new Configuration());
+            logHelper.readLogs();
         } catch (IOException e) {
+            e.printStackTrace();
+        } catch (ClassNotFoundException e) {
             e.printStackTrace();
         }
     }
@@ -54,6 +61,10 @@ public class MyProcessor implements Processor {
     }
 
     public boolean put(String key, Map<String, String> value) {
+        return put(key, value, true);
+    }
+
+    public boolean put(String key, Map<String, String> value, boolean writeLog) {
         byte[] bytes = null;
         ByteArrayOutputStream os = new ByteArrayOutputStream();
         ObjectOutputStream oos = null;
@@ -65,6 +76,11 @@ public class MyProcessor implements Processor {
             Key k = new Key();
             k.setRowId(key);
             Value v = new Value(bytes);
+
+            if (writeLog) {
+                logHelper.writeLog(key, value);
+            }
+
             client.write(k, v);
         } catch (IOException e) {
             e.printStackTrace();
@@ -87,5 +103,13 @@ public class MyProcessor implements Processor {
     public byte[] process(byte[] inupt) {
         System.out.println("receive info:" + new String(inupt));
         return "received!".getBytes();
+    }
+
+    public void deleteLog() {
+        try {
+            logHelper.refresh();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 }

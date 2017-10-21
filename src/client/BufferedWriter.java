@@ -25,7 +25,6 @@ public class BufferedWriter extends Writer {
     // TODO: 10/17/17 need log
     @Override
     public void write(Key key, Value value) throws IOException {
-        client.writeLog(key, value);
         buffer.put(key, value);
         flushIfNeeded();
     }

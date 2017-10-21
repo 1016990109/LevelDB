@@ -37,9 +37,9 @@ public class HeDb {
     private FileSystem fileSystem;
     private Writer writer;
     private Reader reader;
-    private LogHelper logHelper;
     private GenerationManager generation;
-    private int maxBufferedElements = 10000;
+    private MyProcessor processor;
+    private int maxBufferedElements = 100;
 
     /**
      * 默认hdfs地址，测试用
@@ -48,11 +48,12 @@ public class HeDb {
      * @param configuration
      * @throws IOException
      */
-    public HeDb(Path databaseName, Configuration configuration) throws IOException {
-        this(databaseName, configuration, "hdfs://master:9000");
+    public HeDb(MyProcessor processor, Path databaseName, Configuration configuration) throws IOException {
+        this(processor, databaseName, configuration, "hdfs://master:9000");
     }
 
-    public HeDb(Path databaseName, Configuration configuration, String hdfsUrl) throws IOException {
+    public HeDb(MyProcessor processor, Path databaseName, Configuration configuration, String hdfsUrl) throws IOException {
+        this.processor = processor;
         this.rootPath = new Path("/");
         this.storePath = new Path(rootPath, TMP);
         this.generationPath = new Path(rootPath, GENERATION);
@@ -62,11 +63,7 @@ public class HeDb {
             createDatabaseIfMissing();
             refresh();
             ensureOpenWriter();
-            ensureOpenLogHelper();
-            logHelper.readLogs((BufferedWriter) this.writer);
         } catch (IOException e) {
-            e.printStackTrace();
-        } catch (URISyntaxException e) {
             e.printStackTrace();
         }
     }
@@ -136,17 +133,6 @@ public class HeDb {
         }
     }
 
-    private void ensureOpenLogHelper() throws URISyntaxException, IOException {
-        if (logHelper == null) {
-            Configuration conf = new Configuration();
-            conf.set("fs.default.name", "file:///");
-            conf.set("mapred.job.tracker", "local");
-            //本地localdisk写log
-            FileSystem fileSystem = FileSystem.getLocal(conf);
-            logHelper = new LogHelper(fileSystem);
-        }
-    }
-
     private void refreshGeneration() throws IOException {
         //初始化时需要读取所有的range索引，多个索引存一个文件，可能会有多个文件，文件名暂时随即生成，因为将读出全部索引
         if (generation != null) {
@@ -168,11 +154,7 @@ public class HeDb {
         return new Index.Reader(fileSystem, new Path(path, HeDb.DATA), fileSystem.getConf());
     }
 
-    public void writeLog(Key key, Value value) throws IOException {
-        logHelper.writeLog(key, value);
-    }
-
     public void refreshLog() throws IOException {
-        logHelper.refresh();
+        processor.deleteLog();
     }
 }
