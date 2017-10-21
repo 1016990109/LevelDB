@@ -39,7 +39,7 @@ public class HeDb {
     private Reader reader;
     private GenerationManager generation;
     private MyProcessor processor;
-    private int maxBufferedElements = 100;
+    private int maxBufferedElements = 10000;
 
     /**
      * 默认hdfs地址，测试用
