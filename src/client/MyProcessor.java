@@ -1,6 +1,5 @@
 package client;
 
-import client.HeDb;
 import cn.helium.kvstore.common.KvStoreConfig;
 import cn.helium.kvstore.processor.Processor;
 import cn.helium.kvstore.rpc.RpcClientFactory;
@@ -9,19 +8,9 @@ import file.Key;
 import file.Value;
 import org.apache.commons.io.output.ByteArrayOutputStream;
 import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.fs.FileSystem;
-import org.apache.hadoop.fs.FsUrlStreamHandlerFactory;
 import org.apache.hadoop.fs.Path;
-import org.apache.hadoop.io.IOUtils;
-import org.apache.hadoop.io.MapFile;
-import org.apache.hadoop.io.MapWritable;
-import org.apache.hadoop.io.Text;
 
 import java.io.*;
-import java.net.MalformedURLException;
-import java.net.URI;
-import java.net.URL;
-import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 
@@ -33,7 +22,7 @@ public class MyProcessor implements Processor {
         String url = KvStoreConfig.getHdfsUrl();
         try {
             logHelper = new LogHelper(this);
-            client = new HeDb(this, new Path("/"), new Configuration());
+            client = new HeDb(this, new Path("/"), new Configuration(), KvStoreConfig.getHdfsUrl());
             logHelper.readLogs();
         } catch (IOException e) {
             e.printStackTrace();
