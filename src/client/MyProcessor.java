@@ -12,6 +12,7 @@ import org.apache.hadoop.fs.Path;
 
 import java.io.*;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 
 public class MyProcessor implements Processor {
@@ -107,6 +108,16 @@ public class MyProcessor implements Processor {
             }
         }
         return true;
+    }
+
+    @Override
+    public int count(Map<String, String> map) {
+        return 0;
+    }
+
+    @Override
+    public Map<Map<String, String>, Integer> groupBy(List<String> list) {
+        return null;
     }
 
     public byte[] process(byte[] input) {
