@@ -1,4 +1,4 @@
-package client;
+package cn.edu.nju.client;
 
 import org.apache.hadoop.io.BytesWritable;
 

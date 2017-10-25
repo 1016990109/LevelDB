@@ -1,10 +1,10 @@
-package client;
+package cn.edu.nju.client;
 
-import file.Key;
-import file.Value;
+import cn.edu.nju.LevelDB;
+import cn.edu.nju.file.Key;
+import cn.edu.nju.file.Value;
 
 import java.io.IOException;
-import java.util.Arrays;
 import java.util.Map;
 import java.util.concurrent.ConcurrentSkipListMap;
 
@@ -13,9 +13,9 @@ public class BufferedWriter extends Writer {
     private final Writer writer;
     private ConcurrentSkipListMap<Key, Value> buffer;
     private final int maxSize;
-    private HeDb client;
+    private LevelDB client;
 
-    public BufferedWriter(Writer writer, int maxSize, HeDb client) {
+    public BufferedWriter(Writer writer, int maxSize, LevelDB client) {
         this.writer = writer;
         this.maxSize = maxSize;
         this.client = client;

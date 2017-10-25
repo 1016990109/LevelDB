@@ -1,4 +1,4 @@
-package file;
+package cn.edu.nju.file;
 
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.*;
@@ -187,7 +187,7 @@ public class Index {
       } else {
         reader.seek(position);
       }
-      // move forward in data file to correct position
+      // move forward in data cn.edu.nju.file to correct position
       for (more = reader.next(pk, pv); more && pk.compareTo(key) <= 0; k.set(pk), v.set(pv), more = reader.next(pk, pv)) {
         // do nothing
       }

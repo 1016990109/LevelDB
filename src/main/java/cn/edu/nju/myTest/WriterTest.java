@@ -1,7 +1,7 @@
-package test;
+package cn.edu.nju.myTest;
 
-import client.MyProcessor;
-import file.Key;
+import cn.edu.nju.MyProcessor;
+import cn.edu.nju.file.Key;
 import java.util.HashMap;
 
 public class WriterTest {

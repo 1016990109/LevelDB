@@ -1,26 +1,19 @@
-package client;
+package cn.edu.nju;
 
-import file.Index;
-import file.Key;
-import file.Value;
+import cn.edu.nju.client.*;
+import cn.edu.nju.file.Index;
+import cn.edu.nju.file.Key;
+import cn.edu.nju.file.Value;
 import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.fs.ContentSummary;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.FsUrlStreamHandlerFactory;
 import org.apache.hadoop.fs.Path;
 
 import java.io.IOException;
 import java.net.URI;
-import java.net.URISyntaxException;
 import java.net.URL;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.List;
-import java.util.Map.Entry;
-import java.util.concurrent.TimeUnit;
 
-public class HeDb {
+public class LevelDB {
 
     public static final String DELETE = "delete";
     public static final String GENERATION = "generation";
@@ -48,11 +41,11 @@ public class HeDb {
      * @param configuration
      * @throws IOException
      */
-    public HeDb(MyProcessor processor, Path databaseName, Configuration configuration) throws IOException {
+    public LevelDB(MyProcessor processor, Path databaseName, Configuration configuration) throws IOException {
         this(processor, databaseName, configuration, "hdfs://master:9000");
     }
 
-    public HeDb(MyProcessor processor, Path databaseName, Configuration configuration, String hdfsUrl) throws IOException {
+    public LevelDB(MyProcessor processor, Path databaseName, Configuration configuration, String hdfsUrl) throws IOException {
         this.processor = processor;
         this.rootPath = new Path("/");
         this.storePath = new Path(rootPath, TMP);
@@ -150,7 +143,7 @@ public class HeDb {
     }
 
     public Index.Reader openIndex(Path path) throws IOException {
-        return new Index.Reader(fileSystem, new Path(path, HeDb.DATA), fileSystem.getConf());
+        return new Index.Reader(fileSystem, new Path(path, LevelDB.DATA), fileSystem.getConf());
     }
 
     public void refreshLog() throws IOException {

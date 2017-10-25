@@ -1,8 +1,8 @@
-package client;
+package cn.edu.nju.client;
 
 
-import file.Key;
-import file.Value;
+import cn.edu.nju.file.Key;
+import cn.edu.nju.file.Value;
 
 import java.io.IOException;
 

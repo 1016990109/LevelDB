@@ -1,17 +1,12 @@
-package file;
+package cn.edu.nju.file;
 
-import client.Utils;
 import org.apache.hadoop.io.BytesWritable;
-import org.apache.hadoop.io.LongWritable;
 import org.apache.hadoop.io.WritableComparable;
 
 import java.io.DataInput;
 import java.io.DataOutput;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
 
 public class Key implements WritableComparable<Key> {
 

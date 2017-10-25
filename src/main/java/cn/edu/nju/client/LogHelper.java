@@ -1,9 +1,7 @@
-package client;
+package cn.edu.nju.client;
 
-import file.Key;
-import file.Value;
+import cn.edu.nju.MyProcessor;
 import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.fs.*;
 import org.apache.hadoop.io.compress.CompressionCodec;
 import org.apache.hadoop.io.compress.DeflateCodec;
 import org.apache.hadoop.io.compress.SnappyCodec;

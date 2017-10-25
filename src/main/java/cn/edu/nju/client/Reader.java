@@ -1,8 +1,9 @@
-package client;
+package cn.edu.nju.client;
 
-import file.Index;
-import file.Key;
-import file.Value;
+import cn.edu.nju.LevelDB;
+import cn.edu.nju.file.Index;
+import cn.edu.nju.file.Key;
+import cn.edu.nju.file.Value;
 
 import java.io.IOException;
 import java.util.Iterator;
@@ -10,11 +11,11 @@ import java.util.Iterator;
 public class Reader {
 
   private final GenerationManager generation;
-  private final HeDb client;
+  private final LevelDB client;
   private final Key k = new Key();
   private final Value v = new Value();
 
-  public Reader(HeDb client, GenerationManager generation) {
+  public Reader(LevelDB client, GenerationManager generation) {
     this.client = client;
     this.generation = generation;
   }

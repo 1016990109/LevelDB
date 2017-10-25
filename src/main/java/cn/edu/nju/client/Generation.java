@@ -1,4 +1,4 @@
-package client;
+package cn.edu.nju.client;
 
 import org.apache.hadoop.fs.FSDataInputStream;
 import org.apache.hadoop.io.IOUtils;

@@ -1,6 +1,6 @@
-package client;
+package cn.edu.nju.client;
 
-import file.Key;
+import cn.edu.nju.file.Key;
 
 import java.util.Comparator;
 

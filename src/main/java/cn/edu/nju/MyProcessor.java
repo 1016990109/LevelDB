@@ -1,11 +1,12 @@
-package client;
+package cn.edu.nju;
 
+import cn.edu.nju.client.LogHelper;
 import cn.helium.kvstore.common.KvStoreConfig;
 import cn.helium.kvstore.processor.Processor;
 import cn.helium.kvstore.rpc.RpcClientFactory;
 import cn.helium.kvstore.rpc.RpcServer;
-import file.Key;
-import file.Value;
+import cn.edu.nju.file.Key;
+import cn.edu.nju.file.Value;
 import org.apache.commons.io.output.ByteArrayOutputStream;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
@@ -16,14 +17,14 @@ import java.util.List;
 import java.util.Map;
 
 public class MyProcessor implements Processor {
-    HeDb client;
+    LevelDB client;
     LogHelper logHelper;
 
     public MyProcessor() {
         String url = KvStoreConfig.getHdfsUrl();
         try {
             logHelper = new LogHelper(this);
-            client = new HeDb(this, new Path("/"), new Configuration(), KvStoreConfig.getHdfsUrl());
+            client = new LevelDB(this, new Path("/"), new Configuration(), KvStoreConfig.getHdfsUrl());
             logHelper.readLogs();
         } catch (IOException e) {
             e.printStackTrace();

@@ -1,22 +1,16 @@
-package client;
+package cn.edu.nju.client;
 
-import file.Index;
-import file.Index.Reader;
-import file.Key;
-import file.Value;
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
+import cn.edu.nju.LevelDB;
+import cn.edu.nju.file.Index;
+import cn.edu.nju.file.Key;
+import cn.edu.nju.file.Value;
 import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.SequenceFile.Metadata;
 import org.apache.hadoop.util.Progressable;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
 import java.util.UUID;
 
 public class FileWriter extends Writer {
@@ -80,7 +74,7 @@ public class FileWriter extends Writer {
         //写真实数据的路径，往/tmp/b603152b-475a-4937-be6a-bfef1d7783d4/data中写数据
         currentOutputStreamPath = new Path(writerPath, UUID.randomUUID().toString());
         writer = new Index.Writer(fileSystem, new Configuration(fileSystem.getConf()), new Path(currentOutputStreamPath,
-                client.HeDb.DATA), progress, metaData, blockSize);
+                LevelDB.DATA), progress, metaData, blockSize);
     }
 
     public void closeOutputStream() throws IOException {
@@ -97,7 +91,7 @@ public class FileWriter extends Writer {
         }
         if (!result) {
             System.out.println(("Marking [" + p + "] deleted"));
-            fileSystem.createNewFile(new Path(p, client.HeDb.DELETE));
+            fileSystem.createNewFile(new Path(p, LevelDB.DELETE));
         }
         return result;
     }

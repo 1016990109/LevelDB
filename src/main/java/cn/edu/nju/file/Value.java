@@ -1,6 +1,5 @@
-package file;
+package cn.edu.nju.file;
 
-import client.Utils;
 import org.apache.hadoop.io.BytesWritable;
 import org.apache.hadoop.io.Writable;
 
@@ -8,7 +7,6 @@ import java.io.DataInput;
 import java.io.DataOutput;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
-import java.math.BigInteger;
 
 public class Value implements Writable {
 

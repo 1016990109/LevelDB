@@ -1,6 +1,7 @@
-package client;
+package cn.edu.nju.client;
 
-import file.Key;
+import cn.edu.nju.LevelDB;
+import cn.edu.nju.file.Key;
 import org.apache.hadoop.fs.FSDataOutputStream;
 import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
@@ -8,7 +9,6 @@ import org.apache.hadoop.fs.Path;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
 
@@ -74,7 +74,7 @@ public class GenerationManager {
 
   private boolean isMarkedForDeletion(FileStatus status, FileSystem fileSystem) throws IOException {
     Path path = status.getPath();
-    if (fileSystem.exists(new Path(path, HeDb.DELETE))) {
+    if (fileSystem.exists(new Path(path, LevelDB.DELETE))) {
       return true;
     }
     return false;

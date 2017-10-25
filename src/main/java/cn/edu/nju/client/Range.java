@@ -1,6 +1,6 @@
-package client;
+package cn.edu.nju.client;
 
-import file.Key;
+import cn.edu.nju.file.Key;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.BytesWritable;
 import org.apache.hadoop.io.LongWritable;
