@@ -46,10 +46,14 @@ public class MyProcessor implements Processor {
                 for (int i =0; i < serversNum; i++) {
                     if (i != current) {
                         //send to other kvpod
-                        byte[] result = RpcClientFactory.inform(i, key.getBytes());
+                        try {
+                            byte[] result = RpcClientFactory.inform(i, key.getBytes());
 
-                        if (result != null) {
-                            return formatBytes(result);
+                            if (result != null) {
+                                return formatBytes(result);
+                            }
+                        } catch (IOException e) {
+                            e.printStackTrace();
                         }
                     }
                 }
