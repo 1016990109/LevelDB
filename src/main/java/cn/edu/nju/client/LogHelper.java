@@ -19,7 +19,8 @@ public class LogHelper {
         this.processor = processor;
     }
 
-    public void writeLog(String key, Map<String, String> value) throws IOException {
+    //多线程写log会异常NotActiveException,not in readObject invocation or fields already read
+    public synchronized void writeLog(String key, Map<String, String> value) throws IOException {
         ensureWriterOpen();
         writer.writeObject(key);
         writer.writeObject(value);
