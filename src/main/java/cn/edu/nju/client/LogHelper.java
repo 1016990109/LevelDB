@@ -37,7 +37,7 @@ public class LogHelper {
         try {
             while (true) {
                 String key = (String) reader.readObject();
-                Map<String, String> value = (Map<String, String>) reader.readObject();
+                Map<String, String> value = (Map) reader.readObject();
 
                 processor.put(key, value, false);
             }
@@ -51,7 +51,13 @@ public class LogHelper {
 
     private void ensureWriterOpen() throws IOException {
         if (writer == null) {
-            writer = new ObjectOutputStream(new FileOutputStream(logPath, true));
+            File file = new File(logPath);
+            FileOutputStream fos = new FileOutputStream(file, true);
+            if (file.length() > 0) {
+                writer = new NoHeaderObjectOutputStream(fos);
+            } else {
+                writer = new ObjectOutputStream(fos);
+            }
         }
     }
 
