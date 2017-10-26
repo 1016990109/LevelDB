@@ -53,11 +53,11 @@ public class LogHelper {
         if (writer == null) {
             File file = new File(logPath);
             FileOutputStream fos = new FileOutputStream(file, true);
-//            if (file.length() > 0) {
-//                writer = new NoHeaderObjectOutputStream(fos);
-//            } else {
+            if (file.length() > 0) {
+                writer = new NoHeaderObjectOutputStream(fos);
+            } else {
                 writer = new ObjectOutputStream(fos);
-//            }
+            }
         }
     }
 
