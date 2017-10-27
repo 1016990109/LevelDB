@@ -18,6 +18,7 @@ public class BufferedWriter extends Writer {
     private LevelDB client;
     private FileSystem fileSystem;
     private Path storePath;
+    private int count;
 
     public BufferedWriter(FileSystem fileSystem, Path storePath, int maxSize, LevelDB client) throws IOException {
         //初始化
@@ -30,7 +31,8 @@ public class BufferedWriter extends Writer {
     }
 
     @Override
-    public void write(Key key, Value value) throws IOException {
+    public synchronized void write(Key key, Value value) throws IOException {
+        count++;
         buffer.put(key, value);
         flushIfNeeded();
     }
@@ -39,12 +41,13 @@ public class BufferedWriter extends Writer {
      * @throws IOException
      */
     private synchronized void flushIfNeeded() throws IOException {
-        if (buffer.size() >= maxSize) {
+        if (count >= maxSize) {
             //clone 浅表副本，但由于Key，Value都是一次性产物，所以没毛病;初始化新的writer
-            ConcurrentSkipListMap<Key, Value> copyBuffer = buffer.clone();
+            ConcurrentSkipListMap<Key, Value> copyBuffer = buffer;
             FileWriter copyFileWriter = (FileWriter) writer;
             writer = new FileWriter(fileSystem, storePath);
             buffer = new ConcurrentSkipListMap<>();
+            count = 0;
             //启动新线程去写入hdfs
             new Thread(new Runnable() {
                 @Override

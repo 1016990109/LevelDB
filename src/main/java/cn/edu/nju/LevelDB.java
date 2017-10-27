@@ -52,7 +52,7 @@ public class LevelDB {
         this.generationPath = new Path(rootPath, GENERATION);
         try {
             //init filesystem
-            this.fileSystem = FileSystem.get(URI.create(hdfsUrl), new Configuration());
+            this.fileSystem = FileSystem.get(URI.create(hdfsUrl), configuration);
             createDatabaseIfMissing();
             refreshGeneration();
             ensureOpenWriter();
@@ -133,6 +133,7 @@ public class LevelDB {
 
     public void updateRange(Key startKey, Key endKey, Path dataPath) {
         generation.addRange(startKey, endKey, dataPath);
+        processor.notifyAddRange(startKey, endKey, dataPath);
     }
 
     private void createDatabaseIfMissing() throws IOException {

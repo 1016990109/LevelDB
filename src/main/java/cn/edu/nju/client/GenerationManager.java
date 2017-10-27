@@ -34,7 +34,7 @@ public class GenerationManager {
 
   public void flush(FileSystem fileSystem){
     try {
-      write(fileSystem, this.instanceGenerationPath, "myRanges");
+      write(fileSystem, this.instanceGenerationPath, getRandomRangeName());
     } catch (IOException e) {
       e.printStackTrace();
     }
@@ -86,5 +86,9 @@ public class GenerationManager {
       pathList.add(range.getPath());
     }
     return pathList;
+  }
+
+  public String getRandomRangeName() {
+    return UUID.randomUUID() + ".range";
   }
 }

@@ -1,5 +1,6 @@
 package cn.edu.nju;
 
+import cn.edu.nju.client.Info;
 import cn.edu.nju.client.LogHelper;
 import cn.helium.kvstore.common.KvStoreConfig;
 import cn.helium.kvstore.processor.Processor;
@@ -12,6 +13,7 @@ import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
 
 import java.io.*;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -19,13 +21,18 @@ import java.util.Map;
 public class MyProcessor implements Processor {
     LevelDB client;
     LogHelper logHelper;
+    int serversNum;
+    int current;
 
     public MyProcessor() {
         String url = KvStoreConfig.getHdfsUrl();
         try {
+            Configuration configuration = new Configuration();
             logHelper = new LogHelper(this, LevelDB.maxBufferedElements);
-            client = new LevelDB(this, new Path("/"), new Configuration(), url);
+            client = new LevelDB(this, new Path("/"), configuration, url);
             logHelper.readLogs();
+            serversNum = KvStoreConfig.getServersNum();
+            current = RpcServer.getRpcServerId();
         } catch (IOException e) {
             e.printStackTrace();
         } catch (ClassNotFoundException e) {
@@ -40,17 +47,15 @@ public class MyProcessor implements Processor {
         try {
             boolean isInCache = client.findInCache(k, v);
             if (!isInCache) {
-                int serversNum = KvStoreConfig.getServersNum();
-                int current = RpcServer.getRpcServerId();
-
-                for (int i =0; i < serversNum; i++) {
+                for (int i = 0; i < serversNum; i++) {
                     if (i != current) {
                         //send to other kvpod
                         try {
-                            byte[] result = RpcClientFactory.inform(i, key.getBytes());
+                            byte[] result = RpcClientFactory.inform(i, info2bytes(new Info(Info.READ, key.getBytes())));
+                            Info info = bytes2Info(result);
 
-                            if (result != null) {
-                                return formatBytes(result);
+                            if (info != null && info.getInfo() != null) {
+                                return formatBytes(info.getInfo());
                             }
                         } catch (Exception e) {
                             e.printStackTrace();
@@ -107,9 +112,9 @@ public class MyProcessor implements Processor {
     }
 
     public boolean batchPut(Map<String, Map<String, String>> records) {
-        Iterator<Map.Entry<String,  Map<String, String>>> entries = records.entrySet().iterator();
+        Iterator<Map.Entry<String, Map<String, String>>> entries = records.entrySet().iterator();
         while (entries.hasNext()) {
-            Map.Entry<String,  Map<String, String>> entry = entries.next();
+            Map.Entry<String, Map<String, String>> entry = entries.next();
             if (!put(entry.getKey(), entry.getValue())) {
                 return false;
             }
@@ -124,27 +129,73 @@ public class MyProcessor implements Processor {
 
     @Override
     public Map<Map<String, String>, Integer> groupBy(List<String> list) {
-        return null;
+        return new HashMap<>();
     }
 
     public byte[] process(byte[] input) {
-        System.out.println("receive info:" + new String(input));
-        Key k = new Key();
-        k.setRowId(new String(input));
-        Value v = new Value();
+        Info receiveInfo = bytes2Info(input);
+        if (receiveInfo != null && receiveInfo.getType() == Info.READ) {
+            //find key
+            Key k = new Key();
+            k.setRowId(new String(receiveInfo.getInfo()));
+            Value v = new Value();
+            Info info = new Info();
+            info.setType(Info.READ);
 
-        boolean isInCache = client.findInCache(k, v);
-        if (isInCache) {
-            return v.getData().getBytes();
-        } else {
-            return null;
+            boolean isInCache = client.findInCache(k, v);
+            if (isInCache) {
+                info.setInfo(v.getData().getBytes());
+            }
+            return info2bytes(info);
+        } else if (receiveInfo != null && receiveInfo.getType() == Info.RANGE) {
+            String[] rangeInfo = new String(receiveInfo.getInfo()).split(",");
+            Key startKey = new Key();
+            Key endKey = new Key();
+            startKey.setRowId(rangeInfo[0]);
+            endKey.setRowId(rangeInfo[1]);
+            client.updateRange(startKey, endKey, new Path(rangeInfo[2]));
+            return input;
         }
+
+        return null;
     }
 
     private Map<String, String> formatBytes(byte[] input) throws IOException, ClassNotFoundException {
-        ByteArrayInputStream byteInt=new ByteArrayInputStream(input);
-        ObjectInputStream objInt=new ObjectInputStream(byteInt);
-        return (Map)objInt.readObject();
+        ByteArrayInputStream byteInt = new ByteArrayInputStream(input);
+        ObjectInputStream objInt = new ObjectInputStream(byteInt);
+        return (Map) objInt.readObject();
+    }
+
+    private byte[] info2bytes(Info info) {
+        byte[] bytes = {};
+        ByteArrayOutputStream bos = new ByteArrayOutputStream();
+        try {
+            ObjectOutputStream oos = new ObjectOutputStream(bos);
+            oos.writeObject(info);
+            oos.flush();
+            bytes = bos.toByteArray();
+            oos.close();
+            bos.close();
+        } catch (IOException ex) {
+            ex.printStackTrace();
+        }
+
+        return bytes;
+    }
+
+    private Info bytes2Info(byte[] bytes) {
+        Info info = null;
+        try {
+            ByteArrayInputStream byteInt = new ByteArrayInputStream(bytes);
+            ObjectInputStream objInt = new ObjectInputStream(byteInt);
+            info = (Info) objInt.readObject();
+        } catch (IOException e) {
+            e.printStackTrace();
+        } catch (ClassNotFoundException e) {
+            e.printStackTrace();
+        }
+
+        return info;
     }
 
     public void deleteLog() {
@@ -152,6 +203,27 @@ public class MyProcessor implements Processor {
             logHelper.deleteLog();
         } catch (IOException e) {
             e.printStackTrace();
+        }
+    }
+
+    public void notifyAddRange(Key startKey, Key endKey, Path dataPath) {
+        informOtherNodes(new Info(Info.RANGE, new StringBuilder()
+                .append(startKey.rowId.getBytes())
+                .append(",")
+                .append(endKey.rowId.getBytes())
+                .append(",")
+                .append(dataPath.getName()).toString().getBytes()));
+    }
+
+    private void informOtherNodes(Info info) {
+        for (int i = 0; i < serversNum; i++) {
+            if (i != current) {
+                try {
+                    RpcClientFactory.inform(i, info2bytes(info));
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            }
         }
     }
 }

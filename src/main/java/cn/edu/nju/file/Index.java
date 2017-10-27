@@ -83,6 +83,8 @@ public class Index {
       if (indexReader != null) {
         indexReader.close();
       }
+
+      reader.close();
 //      fileSystem.delete(indexPath, true);
     }
 
@@ -168,12 +170,7 @@ public class Index {
     private final Path path;
 
     public Reader(FileSystem fileSystem, Path path, Configuration conf) throws IOException {
-      reader = new SequenceFile.Reader(fileSystem, path, conf) {
-        @Override
-        protected FSDataInputStream openFile(FileSystem fs, Path file, int bufferSize, long length) throws IOException {
-          return new FSDataInputStream(new CounterInputStream(bytesRead, super.openFile(fs, file, bufferSize, length)));
-        }
-      };
+      reader = new SequenceFile.Reader(fileSystem, path, conf);
       this.path = path;
       dataLength = fileSystem.getFileStatus(path).getLen();
       reset = reader.getPosition();
@@ -372,88 +369,5 @@ public class Index {
 
   public static Path getIndexFile(Path dataFile, int index) {
     return new Path(dataFile.getParent(), dataFile.getName() + ".index." + index);
-  }
-
-  private static class CounterInputStream extends InputStream implements Seekable, PositionedReadable {
-
-    private FSDataInputStream in;
-    private AtomicLong bytesRead;
-
-    public CounterInputStream(AtomicLong bytesRead, FSDataInputStream in) {
-      this.in = in;
-      this.bytesRead = bytesRead;
-    }
-
-    public final int read(byte[] b) throws IOException {
-      return add(in.read(b));
-    }
-
-    private int add(int val) {
-      bytesRead.addAndGet(val);
-      return val;
-    }
-
-    private void incr() {
-      bytesRead.incrementAndGet();
-    }
-
-    public int read() throws IOException {
-      incr();
-      return in.read();
-    }
-
-    public void seek(long desired) throws IOException {
-      in.seek(desired);
-    }
-
-    public long getPos() throws IOException {
-      return in.getPos();
-    }
-
-    public int read(long position, byte[] buffer, int offset, int length) throws IOException {
-      return add(in.read(position, buffer, offset, length));
-    }
-
-    public void readFully(long position, byte[] buffer, int offset, int length) throws IOException {
-      add(length);
-      in.readFully(position, buffer, offset, length);
-    }
-
-    public void readFully(long position, byte[] buffer) throws IOException {
-      add(buffer.length);
-      in.readFully(position, buffer);
-    }
-
-    public boolean seekToNewSource(long targetPos) throws IOException {
-      return in.seekToNewSource(targetPos);
-    }
-
-    public final int read(byte[] b, int off, int len) throws IOException {
-      return add(in.read(b, off, len));
-    }
-
-    public long skip(long n) throws IOException {
-      return in.skip(n);
-    }
-
-    public int available() throws IOException {
-      return in.available();
-    }
-
-    public void close() throws IOException {
-      in.close();
-    }
-
-    public void mark(int readlimit) {
-      in.mark(readlimit);
-    }
-
-    public void reset() throws IOException {
-      in.reset();
-    }
-
-    public boolean markSupported() {
-      return in.markSupported();
-    }
   }
 }

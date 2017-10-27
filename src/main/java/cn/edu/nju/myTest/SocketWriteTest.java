@@ -19,15 +19,15 @@ public class SocketWriteTest {
     public static CloseableHttpClient httpclient = null;
 
     public static void main(String[] args) {
-        String url = "http://localhost:8500/process";
+        String[] url = {"http://192.168.1.211:8500/process","http://192.168.1.110:8500/process"};
 
-        for (int i = 10000; i < 10100; i++) {
+        for (int i = 0; i < 31245; i++) {
             Map<String,Object> map = new HashMap<String,Object>();
             Map<String, String> value = new HashMap<>();
             value.put("col" + i, "value" + i);
             map.put("key", i + "");
             map.put("value", value);
-            sendPost(url, "{'key':'" + i + "', 'value':{'col" + i + "':'val" + i + "'}}");
+            sendPost(url[i%2], "{'key':'" + i + "', 'value':{'col" + i + "':'val" + i + "'}}");
         }
     }
 

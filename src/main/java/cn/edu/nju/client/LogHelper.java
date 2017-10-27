@@ -50,6 +50,8 @@ public class LogHelper {
         if (file.exists()) {
             File[] files = file.listFiles();
             for (File logFile: files) {
+                if (!logFile.getPath().endsWith(".log"))
+                    break;
                 reader = new ObjectInputStream(new FileInputStream(logFile));
 
                 try {
