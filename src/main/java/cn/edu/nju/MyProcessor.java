@@ -23,8 +23,8 @@ public class MyProcessor implements Processor {
     public MyProcessor() {
         String url = KvStoreConfig.getHdfsUrl();
         try {
-            logHelper = new LogHelper(this);
-            client = new LevelDB(this, new Path("/"), new Configuration(), KvStoreConfig.getHdfsUrl());
+            logHelper = new LogHelper(this, LevelDB.maxBufferedElements);
+            client = new LevelDB(this, new Path("/"), new Configuration(), url);
             logHelper.readLogs();
         } catch (IOException e) {
             e.printStackTrace();
@@ -33,7 +33,7 @@ public class MyProcessor implements Processor {
         }
     }
 
-    public Map<String, String> get(String key) {
+    public synchronized Map<String, String> get(String key) {
         Key k = new Key();
         k.setRowId(key);
         Value v = new Value();
@@ -52,7 +52,7 @@ public class MyProcessor implements Processor {
                             if (result != null) {
                                 return formatBytes(result);
                             }
-                        } catch (IOException e) {
+                        } catch (Exception e) {
                             e.printStackTrace();
                         }
                     }
@@ -94,6 +94,8 @@ public class MyProcessor implements Processor {
 
             if (writeLog) {
                 logHelper.writeLog(key, value);
+            } else {
+                logHelper.countIncrease();
             }
 
             client.write(k, v);
@@ -104,7 +106,7 @@ public class MyProcessor implements Processor {
         return true;
     }
 
-    public synchronized boolean batchPut(Map<String, Map<String, String>> records) {
+    public boolean batchPut(Map<String, Map<String, String>> records) {
         Iterator<Map.Entry<String,  Map<String, String>>> entries = records.entrySet().iterator();
         while (entries.hasNext()) {
             Map.Entry<String,  Map<String, String>> entry = entries.next();
@@ -147,7 +149,7 @@ public class MyProcessor implements Processor {
 
     public void deleteLog() {
         try {
-            logHelper.refresh();
+            logHelper.deleteLog();
         } catch (IOException e) {
             e.printStackTrace();
         }

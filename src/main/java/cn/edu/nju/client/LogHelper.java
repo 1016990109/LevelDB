@@ -1,57 +1,80 @@
 package cn.edu.nju.client;
 
 import cn.edu.nju.MyProcessor;
-import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.io.compress.CompressionCodec;
-import org.apache.hadoop.io.compress.DeflateCodec;
-import org.apache.hadoop.io.compress.SnappyCodec;
 
 import java.io.*;
 import java.util.Map;
+import java.util.UUID;
 
 public class LogHelper {
-    private String logPath = "/opt/localdisk/log.out";
+    private String logFolderPath = "/opt/localdisk/";
+    private String currentPath;
+    private String flushPath;
     private MyProcessor processor;
     private ObjectOutputStream writer;
     private ObjectInputStream reader;
+    private int maxCount;
+    private int count = 0;
 
-    public LogHelper(MyProcessor processor) {
+    public LogHelper(MyProcessor processor, int maxCount) {
         this.processor = processor;
+        this.maxCount = maxCount;
     }
 
-    public void writeLog(String key, Map<String, String> value) throws IOException {
+    public synchronized void writeLog(String key, Map<String, String> value) throws IOException {
+        count++;
+
         ensureWriterOpen();
         writer.writeObject(key);
         writer.writeObject(value);
         writer.flush();
+
+        if (count == maxCount) {
+            refresh();
+            count = 0;
+        }
     }
 
+    public synchronized void countIncrease() {
+        count++;
+    }
+
+    /**
+     *
+     * @throws IOException
+     * @throws ClassNotFoundException
+     */
     public void readLogs() throws IOException, ClassNotFoundException {
-        ensureReaderOpen();
+        File file = new File(logFolderPath);
 
-        if (reader == null) {
-            //no logs
-            return;
-        }
+        if (file.exists()) {
+            File[] files = file.listFiles();
+            for (File logFile: files) {
+                reader = new ObjectInputStream(new FileInputStream(logFile));
 
-        try {
-            while (true) {
-                String key = (String) reader.readObject();
-                Map<String, String> value = (Map<String, String>) reader.readObject();
+                try {
+                    while (true) {
+                        String key = (String) reader.readObject();
+                        Map<String, String> value = (Map<String, String>) reader.readObject();
 
-                processor.put(key, value, false);
+                        processor.put(key, value, false);
+                    }
+                } catch (EOFException e) {
+
+                } finally {
+                    reader.close();
+                    currentPath = logFile.getPath();
+                    flushPath = currentPath;
+                    writer = new NoHeaderObjectOutputStream(new FileOutputStream(new File(currentPath), true));
+                }
             }
-        } catch (EOFException e) {
-
-        } finally {
-            reader.close();
         }
-
     }
 
     private void ensureWriterOpen() throws IOException {
         if (writer == null) {
-            File file = new File(logPath);
+            currentPath = getRandomFileName();
+            File file = new File(currentPath);
             FileOutputStream fos = new FileOutputStream(file, true);
             if (file.length() > 0) {
                 writer = new NoHeaderObjectOutputStream(fos);
@@ -61,38 +84,29 @@ public class LogHelper {
         }
     }
 
-    private void ensureReaderOpen() throws IOException {
-        if (reader == null) {
-            File file = new File(logPath);
+    /**
+     * 换一个文件写
+     * @throws IOException
+     */
+    public synchronized void refresh() throws IOException {
+        writer.close();
+        flushPath = currentPath;
+        currentPath = getRandomFileName();
+        writer = new ObjectOutputStream(new FileOutputStream(new File(currentPath)));
+    }
 
-            if (file.exists()) {
-                reader = new ObjectInputStream(new FileInputStream(file));
+    public synchronized void deleteLog() throws IOException {
+        if (flushPath != null && !flushPath.equals("")) {
+            File file = new File(flushPath);
+
+            if (file.exists() && file.isFile()) {
+                file.delete();
+                flushPath = "";
             }
         }
     }
 
-    private static CompressionCodec getCodec(Configuration conf) {
-        if (SnappyCodec.isNativeCodeLoaded()) {
-            return new SnappyCodec();
-        }
-        return new DeflateCodec();
-    }
-
-    public void close() {
-        try {
-            writer.close();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-    }
-
-    public void refresh() throws IOException {
-        writer.close();
-        writer = null;
-        File file = new File(logPath);
-
-        if (file.exists() && file.isFile()) {
-            file.delete();
-        }
+    private String getRandomFileName() {
+        return logFolderPath + UUID.randomUUID() + ".log";
     }
 }

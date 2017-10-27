@@ -19,6 +19,7 @@ public class LevelDB {
     public static final String GENERATION = "generation";
     public static final String TMP = "tmp";
     public static final String DATA = "data";
+    public static int maxBufferedElements = 10000;
 
     static {
         URL.setURLStreamHandlerFactory(new FsUrlStreamHandlerFactory());
@@ -32,7 +33,6 @@ public class LevelDB {
     private Reader reader;
     private GenerationManager generation;
     private MyProcessor processor;
-    private int maxBufferedElements = 10000;
 
     /**
      * 默认hdfs地址，测试用
@@ -42,7 +42,7 @@ public class LevelDB {
      * @throws IOException
      */
     public LevelDB(MyProcessor processor, Path databaseName, Configuration configuration) throws IOException {
-        this(processor, databaseName, configuration, "hdfs://master:9000");
+        this(processor, databaseName, configuration, "hdfs://localhost:9000");
     }
 
     public LevelDB(MyProcessor processor, Path databaseName, Configuration configuration, String hdfsUrl) throws IOException {
@@ -54,7 +54,7 @@ public class LevelDB {
             //init filesystem
             this.fileSystem = FileSystem.get(URI.create(hdfsUrl), new Configuration());
             createDatabaseIfMissing();
-            refresh();
+            refreshGeneration();
             ensureOpenWriter();
         } catch (IOException e) {
             e.printStackTrace();
@@ -87,12 +87,6 @@ public class LevelDB {
         return ((BufferedWriter) writer).findInCache(key, value);
     }
 
-   /**
-     * Updates to the most current view of the database.
-     */
-    public void refresh() throws IOException {
-        refreshGeneration();
-    }
 
     /**
      * Removes all changes since the last commit was called.
@@ -115,7 +109,7 @@ public class LevelDB {
 
     private void ensureOpenWriter() throws IOException {
         if (writer == null) {
-            writer = new BufferedWriter(new FileWriter(fileSystem, storePath), maxBufferedElements, this);
+            writer = new BufferedWriter(fileSystem, storePath, maxBufferedElements, this);
         }
     }
 
@@ -125,12 +119,16 @@ public class LevelDB {
         }
     }
 
-    private void refreshGeneration() throws IOException {
-        //初始化时需要读取所有的range索引，多个索引存一个文件，可能会有多个文件，文件名暂时随即生成，因为将读出全部索引
+    /**
+     * 第一次constructor调用，初始化generation；之后调用往hdfs中写入range索引
+     * @throws IOException
+     */
+    public void refreshGeneration() throws IOException {
         if (generation != null) {
             generation.flush(fileSystem);
+        } else {
+            generation = new GenerationManager(fileSystem, generationPath);
         }
-        generation = new GenerationManager(fileSystem, generationPath);
     }
 
     public void updateRange(Key startKey, Key endKey, Path dataPath) {
@@ -146,7 +144,7 @@ public class LevelDB {
         return new Index.Reader(fileSystem, new Path(path, LevelDB.DATA), fileSystem.getConf());
     }
 
-    public void refreshLog() throws IOException {
+    public void deleteLog() throws IOException {
         processor.deleteLog();
     }
 }

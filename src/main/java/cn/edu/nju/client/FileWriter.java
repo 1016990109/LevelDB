@@ -80,6 +80,7 @@ public class FileWriter extends Writer {
     public void closeOutputStream() throws IOException {
         if (writer != null) {
             writer.close();
+            writer = null;
         }
     }
 
