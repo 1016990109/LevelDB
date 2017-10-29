@@ -32,7 +32,7 @@ public class ReaderTest {
 //            }
 //            Thread.sleep(10);
 //        }
-        sendPost(url, 177 + "");
+        sendPost(url, 991234 + "");
 
     }
 

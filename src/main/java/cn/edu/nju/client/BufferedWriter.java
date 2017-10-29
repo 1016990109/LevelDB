@@ -19,6 +19,7 @@ public class BufferedWriter extends Writer {
     private FileSystem fileSystem;
     private Path storePath;
     private int count;
+    private String flushPath;
 
     public BufferedWriter(FileSystem fileSystem, Path storePath, int maxSize, LevelDB client) throws IOException {
         //初始化
@@ -45,6 +46,7 @@ public class BufferedWriter extends Writer {
             //clone 浅表副本，但由于Key，Value都是一次性产物，所以没毛病;初始化新的writer
             ConcurrentSkipListMap<Key, Value> copyBuffer = buffer;
             FileWriter copyFileWriter = (FileWriter) writer;
+            String copyFlushPath = flushPath;
             writer = new FileWriter(fileSystem, storePath);
             buffer = new ConcurrentSkipListMap<>();
             count = 0;
@@ -53,7 +55,7 @@ public class BufferedWriter extends Writer {
                 @Override
                 public void run() {
                     try {
-                        flush(copyBuffer, copyFileWriter);
+                        flush(copyBuffer, copyFileWriter, copyFlushPath);
                     } catch (IOException e) {
                         e.printStackTrace();
                     }
@@ -68,7 +70,7 @@ public class BufferedWriter extends Writer {
      * @param fileWriter
      * @throws IOException
      */
-    private void flush(ConcurrentSkipListMap<Key, Value> flushMap, FileWriter fileWriter) throws IOException {
+    private void flush(ConcurrentSkipListMap<Key, Value> flushMap, FileWriter fileWriter, String deletePath) throws IOException {
         if (flushMap.size() == 0) {
             return;
         }
@@ -78,7 +80,7 @@ public class BufferedWriter extends Writer {
         fileWriter.closeOutputStream();
         this.client.updateRange(flushMap.firstKey(), flushMap.lastKey(), fileWriter.getCurrentWritePath());
         this.client.refreshGeneration();
-        this.client.deleteLog();
+        LogHelper.deleteLog(deletePath);
     }
 
     @Override
@@ -95,5 +97,9 @@ public class BufferedWriter extends Writer {
         } else {
             return false;
         }
+    }
+
+    public void setFlushPath(String flushPath) {
+        this.flushPath = flushPath;
     }
 }

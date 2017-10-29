@@ -18,16 +18,33 @@ import java.util.Map;
 public class SocketWriteTest {
     public static CloseableHttpClient httpclient = null;
 
-    public static void main(String[] args) {
-        String[] url = {"http://192.168.1.211:8500/process","http://192.168.1.110:8500/process"};
+//    public static void main(String[] args) {
+//        String[] url = {"http://192.168.1.211:8500/process","http://192.168.1.110:8500/process"};
+//
+//        for (int i = 0; i < 31245; i++) {
+//            Map<String,Object> map = new HashMap<String,Object>();
+//            Map<String, String> value = new HashMap<>();
+//            value.put("col" + i, "value" + i);
+//            map.put("key", i + "");
+//            map.put("value", value);
+//            sendPost(url[i%2], "{'key':'" + i + "', 'value':{'col" + i + "':'val" + i + "'}}");
+//        }
+//    }
 
-        for (int i = 0; i < 31245; i++) {
-            Map<String,Object> map = new HashMap<String,Object>();
-            Map<String, String> value = new HashMap<>();
-            value.put("col" + i, "value" + i);
-            map.put("key", i + "");
-            map.put("value", value);
-            sendPost(url[i%2], "{'key':'" + i + "', 'value':{'col" + i + "':'val" + i + "'}}");
+    public static void main(String[] args) {
+        String[] url = {"http://192.168.1.211:8500/batchProcess","http://192.168.1.110:8500/batchProcess"};
+
+        for (int i = 0; i < 1000000; i++) {
+            StringBuilder content = new StringBuilder();
+            content.append("{");
+            for (int j = 0;j < 2000; j++, i++) {
+                content.append("'" + i + "':{'col" + i + "':'val" + i + "'}");
+                if (j != 1999) {
+                    content.append(",");
+                }
+            }
+            content.append("}");
+            sendPost(url[(int)(Math.random()*2)], content.toString());
         }
     }
 
@@ -42,7 +59,7 @@ public class SocketWriteTest {
                 StringEntity stringentity = new StringEntity(data, ContentType.create("text/json", "UTF-8"));
                 httppost.setEntity(stringentity);
                 httpresponse = httpclient.execute(httppost);
-                response = EntityUtils.toString(httpresponse.getEntity());
+//                response = EntityUtils.toString(httpresponse.getEntity());
             } finally {
                 if (httpclient != null) {
                     httpclient.close();

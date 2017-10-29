@@ -28,11 +28,10 @@ public class MyProcessor implements Processor {
         String url = KvStoreConfig.getHdfsUrl();
         try {
             Configuration configuration = new Configuration();
+//            configuration.set("fs.hdfs.impl", "org.apache.hadoop.hdfs.DistributedFileSystem");
             logHelper = new LogHelper(this, LevelDB.maxBufferedElements);
             client = new LevelDB(this, new Path("/"), configuration, url);
             logHelper.readLogs();
-            serversNum = KvStoreConfig.getServersNum();
-            current = RpcServer.getRpcServerId();
         } catch (IOException e) {
             e.printStackTrace();
         } catch (ClassNotFoundException e) {
@@ -44,6 +43,8 @@ public class MyProcessor implements Processor {
         Key k = new Key();
         k.setRowId(key);
         Value v = new Value();
+        serversNum = KvStoreConfig.getServersNum();
+        current = RpcServer.getRpcServerId();
         try {
             boolean isInCache = client.findInCache(k, v);
             if (!isInCache) {
@@ -153,7 +154,7 @@ public class MyProcessor implements Processor {
             Key endKey = new Key();
             startKey.setRowId(rangeInfo[0]);
             endKey.setRowId(rangeInfo[1]);
-            client.updateRange(startKey, endKey, new Path(rangeInfo[2]));
+            client.updateRange(startKey, endKey, new Path(rangeInfo[2]), false);
             return input;
         }
 
@@ -198,24 +199,18 @@ public class MyProcessor implements Processor {
         return info;
     }
 
-    public void deleteLog() {
-        try {
-            logHelper.deleteLog();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-    }
-
     public void notifyAddRange(Key startKey, Key endKey, Path dataPath) {
         informOtherNodes(new Info(Info.RANGE, new StringBuilder()
-                .append(startKey.rowId.getBytes())
+                .append(new String(startKey.rowId.getBytes()))
                 .append(",")
-                .append(endKey.rowId.getBytes())
+                .append(new String(endKey.rowId.getBytes()))
                 .append(",")
-                .append(dataPath.getName()).toString().getBytes()));
+                .append(dataPath.toString()).toString().getBytes()));
     }
 
     private void informOtherNodes(Info info) {
+        serversNum = KvStoreConfig.getServersNum();
+        current = RpcServer.getRpcServerId();
         for (int i = 0; i < serversNum; i++) {
             if (i != current) {
                 try {
@@ -225,5 +220,9 @@ public class MyProcessor implements Processor {
                 }
             }
         }
+    }
+
+    public void updateFlushPath(String currentPath) {
+        client.updateFlushPath(currentPath);
     }
 }

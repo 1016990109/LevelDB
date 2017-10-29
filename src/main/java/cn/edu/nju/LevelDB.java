@@ -132,8 +132,14 @@ public class LevelDB {
     }
 
     public void updateRange(Key startKey, Key endKey, Path dataPath) {
+        updateRange(startKey, endKey, dataPath, true);
+    }
+
+    public void updateRange(Key startKey, Key endKey, Path dataPath, boolean ifNotify) {
         generation.addRange(startKey, endKey, dataPath);
-        processor.notifyAddRange(startKey, endKey, dataPath);
+        if (ifNotify) {
+            processor.notifyAddRange(startKey, endKey, dataPath);
+        }
     }
 
     private void createDatabaseIfMissing() throws IOException {
@@ -145,7 +151,7 @@ public class LevelDB {
         return new Index.Reader(fileSystem, new Path(path, LevelDB.DATA), fileSystem.getConf());
     }
 
-    public void deleteLog() throws IOException {
-        processor.deleteLog();
+    public void updateFlushPath(String currentPath) {
+        ((BufferedWriter)writer).setFlushPath(currentPath);
     }
 }

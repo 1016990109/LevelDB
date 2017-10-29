@@ -66,7 +66,6 @@ public class LogHelper {
                 } finally {
                     reader.close();
                     currentPath = logFile.getPath();
-                    flushPath = currentPath;
                     writer = new NoHeaderObjectOutputStream(new FileOutputStream(new File(currentPath), true));
                 }
             }
@@ -92,18 +91,17 @@ public class LogHelper {
      */
     public synchronized void refresh() throws IOException {
         writer.close();
-        flushPath = currentPath;
+        processor.updateFlushPath(currentPath);
         currentPath = getRandomFileName();
         writer = new ObjectOutputStream(new FileOutputStream(new File(currentPath)));
     }
 
-    public synchronized void deleteLog() throws IOException {
+    public static synchronized void deleteLog(String flushPath) throws IOException {
         if (flushPath != null && !flushPath.equals("")) {
             File file = new File(flushPath);
 
             if (file.exists() && file.isFile()) {
                 file.delete();
-                flushPath = "";
             }
         }
     }
