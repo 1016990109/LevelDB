@@ -5,6 +5,7 @@ import java.io.Serializable;
 public class Info implements Serializable {
     public static final int READ = 0;
     public static final int RANGE = 1;
+    public static final int FETCH = 2;
 
     private int type;
     private byte[] info;

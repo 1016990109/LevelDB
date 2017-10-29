@@ -34,17 +34,17 @@ public class SocketWriteTest {
     public static void main(String[] args) {
         String[] url = {"http://192.168.1.211:8500/batchProcess","http://192.168.1.110:8500/batchProcess"};
 
-        for (int i = 0; i < 1000000; i++) {
+        for (int i = 0; i < 1006000; i++) {
             StringBuilder content = new StringBuilder();
             content.append("{");
-            for (int j = 0;j < 2000; j++, i++) {
+            for (int j = 0;j < 10000; j++, i++) {
                 content.append("'" + i + "':{'col" + i + "':'val" + i + "'}");
-                if (j != 1999) {
+                if (j != 9999) {
                     content.append(",");
                 }
             }
             content.append("}");
-            sendPost(url[(int)(Math.random()*2)], content.toString());
+            sendPost(url[0], content.toString());
         }
     }
 

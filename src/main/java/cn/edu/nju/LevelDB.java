@@ -19,7 +19,7 @@ public class LevelDB {
     public static final String GENERATION = "generation";
     public static final String TMP = "tmp";
     public static final String DATA = "data";
-    public static int maxBufferedElements = 10000;
+    public static int maxBufferedElements = 100000;
 
     static {
         URL.setURLStreamHandlerFactory(new FsUrlStreamHandlerFactory());

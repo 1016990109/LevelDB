@@ -32,7 +32,7 @@ public class ReaderTest {
 //            }
 //            Thread.sleep(10);
 //        }
-        sendPost(url, 991234 + "");
+        sendPost(url, 102548 + "");
 
     }
 
@@ -53,6 +53,7 @@ public class ReaderTest {
                 httppost.setHeader("key", data);
                 httpresponse = httpclient.execute(httppost);
                 response = EntityUtils.toString(httpresponse.getEntity());
+                System.out.println(response);
                 if (response.equals("find nothing")) {
                     System.out.println(data);
                 }

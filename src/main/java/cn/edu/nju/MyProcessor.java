@@ -13,10 +13,7 @@ import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
 
 import java.io.*;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 public class MyProcessor implements Processor {
     LevelDB client;
@@ -48,19 +45,45 @@ public class MyProcessor implements Processor {
         try {
             boolean isInCache = client.findInCache(k, v);
             if (!isInCache) {
+                ArrayList<Integer> needInformClientIds = new ArrayList<>();
+                ArrayList<Integer> notConnectedClientIds = new ArrayList<>();
                 for (int i = 0; i < serversNum; i++) {
                     if (i != current) {
                         //send to other kvpod
-                        try {
-                            byte[] result = RpcClientFactory.inform(i, info2bytes(new Info(Info.READ, key.getBytes())));
-                            Info info = bytes2Info(result);
-
-                            if (info != null && info.getInfo() != null) {
-                                return formatBytes(info.getInfo());
-                            }
-                        } catch (Exception e) {
-                            e.printStackTrace();
+                        if (RpcServer.isConnected(i)) {
+                            needInformClientIds.add(i);
+                        } else {
+                            notConnectedClientIds.add(i);
                         }
+                    }
+                }
+
+                //query data
+                for (int i = 0; i < needInformClientIds.size(); i++) {
+                    try {
+                        byte[] result = null;
+                        result = RpcClientFactory.inform(needInformClientIds.get(i), info2bytes(new Info(Info.READ, key.getBytes())));
+                        Info info = bytes2Info(result);
+
+                        if (info != null && info.getInfo() != null) {
+                            return formatBytes(info.getInfo());
+                        }
+
+                        //query data from other client
+                        if (notConnectedClientIds.size() != 0) {
+                            for (int j = 0; j < notConnectedClientIds.size(); j++) {
+                                result = RpcClientFactory.inform(needInformClientIds.get(i), info2bytes(new Info(Info.FETCH, (notConnectedClientIds.get(j) + "," + key).getBytes())));
+                                info = bytes2Info(result);
+
+                                if (info != null && info.getInfo() != null) {
+                                    return formatBytes(info.getInfo());
+                                }
+                            }
+                        }
+                    } catch (IOException e) {
+                        //connection refused
+                        System.out.println("unknown error");
+                        e.printStackTrace();
                     }
                 }
             } else {
@@ -73,9 +96,7 @@ public class MyProcessor implements Processor {
             if (isFound) {
                 return formatBytes(v.getData().getBytes());
             }
-        } catch (IOException e) {
-            e.printStackTrace();
-        } catch (ClassNotFoundException e) {
+        } catch (Exception e) {
             e.printStackTrace();
         }
         return null;
@@ -137,17 +158,7 @@ public class MyProcessor implements Processor {
         Info receiveInfo = bytes2Info(input);
         if (receiveInfo != null && receiveInfo.getType() == Info.READ) {
             //find key
-            Key k = new Key();
-            k.setRowId(new String(receiveInfo.getInfo()));
-            Value v = new Value();
-            Info info = new Info();
-            info.setType(Info.READ);
-
-            boolean isInCache = client.findInCache(k, v);
-            if (isInCache) {
-                info.setInfo(v.getData().getBytes());
-            }
-            return info2bytes(info);
+            return findInCache(receiveInfo);
         } else if (receiveInfo != null && receiveInfo.getType() == Info.RANGE) {
             String[] rangeInfo = new String(receiveInfo.getInfo()).split(",");
             Key startKey = new Key();
@@ -156,9 +167,31 @@ public class MyProcessor implements Processor {
             endKey.setRowId(rangeInfo[1]);
             client.updateRange(startKey, endKey, new Path(rangeInfo[2]), false);
             return input;
+        } else if (receiveInfo != null && receiveInfo.getType() == Info.FETCH){
+            String[] queryInfo = new String(receiveInfo.getInfo()).split(",");
+            try {
+                return RpcClientFactory.inform(Integer.parseInt(queryInfo[0]), info2bytes(new Info(Info.READ, queryInfo[1].getBytes())));
+            } catch (IOException e) {
+                e.printStackTrace();
+                return input;
+            }
         }
 
         return null;
+    }
+
+    private byte[] findInCache(Info receiveInfo) {
+        Key k = new Key();
+        k.setRowId(new String(receiveInfo.getInfo()));
+        Value v = new Value();
+        Info info = new Info();
+        info.setType(Info.READ);
+
+        boolean isInCache = client.findInCache(k, v);
+        if (isInCache) {
+            info.setInfo(v.getData().getBytes());
+        }
+        return info2bytes(info);
     }
 
     private Map<String, String> formatBytes(byte[] input) throws IOException, ClassNotFoundException {
@@ -215,7 +248,7 @@ public class MyProcessor implements Processor {
             if (i != current) {
                 try {
                     RpcClientFactory.inform(i, info2bytes(info));
-                } catch (Exception e) {
+                } catch (IOException e) {
                     e.printStackTrace();
                 }
             }
