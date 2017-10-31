@@ -36,7 +36,7 @@ public class MyProcessor implements Processor {
         }
     }
 
-    public synchronized Map<String, String> get(String key) {
+    public Map<String, String> get(String key) {
         Key k = new Key();
         k.setRowId(key);
         Value v = new Value();
