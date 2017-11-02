@@ -32,9 +32,9 @@ public class GenerationManager {
     generation.ranges.add(new Range(dataPath, startKey, endKey));
   }
 
-  public void flush(FileSystem fileSystem){
+  public void flush(FileSystem fileSystem, Range range){
     try {
-      write(fileSystem, this.instanceGenerationPath, getRandomRangeName());
+      write(fileSystem, this.instanceGenerationPath, getRandomRangeName(), range);
     } catch (IOException e) {
       e.printStackTrace();
     }
@@ -56,10 +56,10 @@ public class GenerationManager {
     return list;
   }
 
-  private void write(FileSystem fileSystem, Path generationPath, String sessionId) throws IOException {
+  private void write(FileSystem fileSystem, Path generationPath, String sessionId, Range range) throws IOException {
     //sessionId随即生成，为存索引文件的名字，写range
     FSDataOutputStream outputStream = fileSystem.create(new Path(generationPath, sessionId));
-    generation.write(outputStream);
+    generation.write(outputStream, range);
     outputStream.close();
   }
 

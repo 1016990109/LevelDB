@@ -122,11 +122,11 @@ public class LevelDB {
      * @throws IOException
      */
     public void refreshGeneration() throws IOException {
-        if (generation != null) {
-            generation.flush(fileSystem);
-        } else {
-            generation = new GenerationManager(fileSystem, generationPath);
-        }
+        generation = new GenerationManager(fileSystem, generationPath);
+    }
+
+    public void flushRange(Range range) {
+        generation.flush(fileSystem, range);
     }
 
     public void updateRange(Key startKey, Key endKey, Path dataPath) {

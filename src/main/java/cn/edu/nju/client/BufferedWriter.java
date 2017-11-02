@@ -79,7 +79,7 @@ public class BufferedWriter extends Writer {
         }
         fileWriter.closeOutputStream();
         this.client.updateRange(flushMap.firstKey(), flushMap.lastKey(), fileWriter.getCurrentWritePath());
-        this.client.refreshGeneration();
+        this.client.flushRange(new Range(fileWriter.getCurrentWritePath(), flushMap.firstKey(), flushMap.lastKey()));
         LogHelper.deleteLog(deletePath);
     }
 
