@@ -50,15 +50,11 @@ public class LevelDB {
         this.rootPath = new Path("/");
         this.storePath = new Path(rootPath, TMP);
         this.generationPath = new Path(rootPath, GENERATION);
-        try {
-            //init filesystem
-            this.fileSystem = FileSystem.get(URI.create(hdfsUrl), configuration);
-            createDatabaseIfMissing();
-            refreshGeneration();
-            ensureOpenWriter();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+        //init filesystem
+        this.fileSystem = FileSystem.get(URI.create(hdfsUrl), configuration);
+        createDatabaseIfMissing();
+        refreshGeneration();
+        ensureOpenWriter();
     }
 
     /**
@@ -74,6 +70,7 @@ public class LevelDB {
 
     /**
      * 先判断内存中是否有该key，再去文件系统中找
+     *
      * @param key   the key.
      * @param value the value.
      * @return true if key was found, false if missing.
@@ -121,6 +118,7 @@ public class LevelDB {
 
     /**
      * 第一次constructor调用，初始化generation；之后调用往hdfs中写入range索引
+     *
      * @throws IOException
      */
     public void refreshGeneration() throws IOException {
@@ -152,6 +150,6 @@ public class LevelDB {
     }
 
     public void updateFlushPath(String currentPath) {
-        ((BufferedWriter)writer).setFlushPath(currentPath);
+        ((BufferedWriter) writer).setFlushPath(currentPath);
     }
 }
