@@ -106,7 +106,7 @@ public class MyProcessor implements Processor {
         return put(key, value, true);
     }
 
-    public boolean put(String key, Map<String, String> value, boolean writeLog) {
+    public synchronized boolean put(String key, Map<String, String> value, boolean writeLog) {
         byte[] bytes = null;
         ByteArrayOutputStream os = new ByteArrayOutputStream();
         ObjectOutputStream oos = null;

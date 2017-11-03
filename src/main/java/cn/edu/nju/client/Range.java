@@ -11,10 +11,6 @@ import java.io.DataOutput;
 import java.io.IOException;
 
 public class Range implements Writable {
-  //一个range只会有一个文件，所以这个range要大
-  //每一个range只存路径，真正的index在该目录下的index文件中
-  private static final BytesWritable EMPTY = new BytesWritable();
-  private static final LongWritable ZERO = new LongWritable();
   private Key startingKey;
   private Key endingKey;
   private Path path;
