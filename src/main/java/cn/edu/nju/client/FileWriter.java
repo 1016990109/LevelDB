@@ -7,7 +7,7 @@ import cn.edu.nju.file.Value;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
-import org.apache.hadoop.io.SequenceFile.Metadata;
+import org.apache.hadoop.io.SequeneFile.Metadata;
 import org.apache.hadoop.util.Progressable;
 
 import java.io.IOException;
@@ -82,19 +82,6 @@ public class FileWriter extends Writer {
             writer.close();
             writer = null;
         }
-    }
-
-    private boolean delete(Path p) throws IOException {
-        int deleteTries = 0;
-        boolean result = false;
-        while (!(result = fileSystem.delete(p, true)) && deleteTries < MAX_DELETE_RETRIES) {
-            deleteTries++;
-        }
-        if (!result) {
-            System.out.println(("Marking [" + p + "] deleted"));
-            fileSystem.createNewFile(new Path(p, LevelDB.DELETE));
-        }
-        return result;
     }
 
     public Path getCurrentWritePath() {

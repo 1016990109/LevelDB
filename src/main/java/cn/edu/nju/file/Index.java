@@ -85,72 +85,7 @@ public class Index {
       }
 
       reader.close();
-//      fileSystem.delete(indexPath, true);
     }
-
-    public List<Entry<Key, Long>> getDensity(long minDensityPerSplit) throws IOException {
-      reader.seek(initPos);
-      Key k = new Key();
-      LongWritable l = new LongWritable();
-
-      List<Entry<Key, Long>> list = new ArrayList<Entry<Key, Long>>();
-      long lastPosition = 0;
-      long currentPosition = 0;
-      while (reader.next(k, l)) {
-        lastPosition = currentPosition;
-        currentPosition = l.get();
-        if (list.isEmpty()) {
-          list.add(newEntry(k, currentPosition));
-        } else {
-          long value = currentPosition - lastPosition;
-          list.add(newEntry(k, value));
-        }
-      }
-
-      long total = 0;
-      for (Entry<Key, Long> e : list) {
-        total += e.getValue();
-      }
-
-      if (total < minDensityPerSplit) {
-        return new ArrayList<Entry<Key, Long>>();
-      }
-
-      return list;
-    }
-
-    public void delete() {
-      if (indexReader != null) {
-        indexReader.delete();
-      }
-    }
-  }
-
-  public static Entry<Key, Long> newEntry(Key k, final long value) {
-    final Key key = new Key();
-    key.set(k);
-    return new Entry<Key, Long>() {
-
-      @Override
-      public Long setValue(Long value) {
-        throw new RuntimeException();
-      }
-
-      @Override
-      public Long getValue() {
-        return value;
-      }
-
-      @Override
-      public Key getKey() {
-        return key;
-      }
-
-      @Override
-      public String toString() {
-        return "{" + getKey() + "}={" + getValue() + "}";
-      }
-    };
   }
 
   public static class Reader implements Comparable<Reader> {
@@ -164,15 +99,10 @@ public class Index {
     private Value pv = new Value();
     private boolean more = true;
     private boolean prevKV;
-    private boolean closed;
-    private long dataLength;
     private AtomicLong bytesRead = new AtomicLong();
-    private final Path path;
 
     public Reader(FileSystem fileSystem, Path path, Configuration conf) throws IOException {
       reader = new SequenceFile.Reader(fileSystem, path, conf);
-      this.path = path;
-      dataLength = fileSystem.getFileStatus(path).getLen();
       reset = reader.getPosition();
       indexReader = new IndexReader(fileSystem, path, conf, 0);
     }
@@ -184,7 +114,7 @@ public class Index {
       } else {
         reader.seek(position);
       }
-      // move forward in data cn.edu.nju.file to correct position
+      // move position
       for (more = reader.next(pk, pv); more && pk.compareTo(key) <= 0; k.set(pk), v.set(pv), more = reader.next(pk, pv)) {
         // do nothing
       }
@@ -195,7 +125,6 @@ public class Index {
 
     public boolean next() throws IOException {
       if (prevKV) {
-        //读前一个，假装读
         pk.set(k);
         pv.set(v);
         prevKV = false;
@@ -206,9 +135,6 @@ public class Index {
     }
 
     public void fetch(Key key, Value value) {
-//      if (prevKV) {
-//        throw new RuntimeException("next() needs to be called before a fetch.");
-//      }
       key.set(k);
       value.set(v);
     }
@@ -219,7 +145,6 @@ public class Index {
     }
 
     public void close() throws IOException {
-      closed = true;
       reader.close();
       indexReader.close();
     }
@@ -227,33 +152,6 @@ public class Index {
     @Override
     public int compareTo(Reader o) {
       return k.compareTo(o.k);
-    }
-
-    public boolean isAtEnd() {
-      return !more && !prevKV;
-    }
-
-    public boolean isClosed() {
-      return closed;
-    }
-
-    public List<Entry<Key, Long>> getDensity(long minDensityPerSplit) throws IOException {
-      List<Entry<Key, Long>> density = indexReader.getDensity(minDensityPerSplit);
-      if (density.isEmpty()) {
-        reader.seek(reset);
-        Key key = new Key();
-        reader.next(key);
-        density.add(newEntry(key, dataLength));
-      }
-      return density;
-    }
-
-    public long getBytesRead() {
-      return bytesRead.get();
-    }
-
-    public Path getPath() {
-      return path;
     }
   }
 

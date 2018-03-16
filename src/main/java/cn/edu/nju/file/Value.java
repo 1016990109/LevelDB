@@ -26,10 +26,6 @@ public class Value implements Writable {
     return data;
   }
 
-  public void setData(BytesWritable data) {
-    this.data = data;
-  }
-
   @Override
   public void write(DataOutput out) throws IOException {
     data.write(out);
@@ -47,22 +43,6 @@ public class Value implements Writable {
   @Override
   public String toString() {
     return new String(data.getBytes(), 0, data.getLength());
-  }
-
-  public void setData(String s) {
-    try {
-      setData(s.getBytes("UTF-8"));
-    } catch (UnsupportedEncodingException e) {
-      throw new RuntimeException(e);
-    }
-  }
-
-  public void setData(byte[] bs) {
-    setData(bs, 0, bs.length);
-  }
-
-  public void setData(byte[] bs, int offset, int length) {
-    data.set(bs, offset, length);
   }
 
   @Override

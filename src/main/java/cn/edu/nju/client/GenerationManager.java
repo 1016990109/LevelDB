@@ -63,29 +63,9 @@ public class GenerationManager {
     outputStream.close();
   }
 
-  private String getGenerationName(String sessionId) {
-    return sessionId + "_" + UUID.randomUUID().toString();
-  }
-
   private void addRanges(FileStatus status, FileSystem fileSystem) throws IOException {
     Path path = status.getPath();
     generation.readFields(fileSystem.open(path));
-  }
-
-  private boolean isMarkedForDeletion(FileStatus status, FileSystem fileSystem) throws IOException {
-    Path path = status.getPath();
-    if (fileSystem.exists(new Path(path, LevelDB.DELETE))) {
-      return true;
-    }
-    return false;
-  }
-
-  public List<Path> getAllReferencedPaths() {
-    List<Path> pathList = new ArrayList<Path>();
-    for (Range range : generation.ranges) {
-      pathList.add(range.getPath());
-    }
-    return pathList;
   }
 
   public String getRandomRangeName() {
